@@ -1,0 +1,8 @@
+url_api = 'https://api.openbrewerydb.org/v1/breweries'
+access_key = ''
+secret_key = ''
+region = ''
+bronze_layer = 'raw'
+silver_layer = 'curated'
+gold_layer = 'analytics'
+bucket = 'bees-case'
