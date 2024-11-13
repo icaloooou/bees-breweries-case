@@ -20,7 +20,6 @@ s3_client = boto3.client('s3',
 def validate_bucket(s3_client, bucket):
     try:
         s3_client.head_bucket(Bucket=bucket)
-        logger.info(f"Bucket '{bucket}' already exists.")
     except ClientError as e:
         if e.response['Error']['Code'] == '404':
             s3_client.create_bucket(
@@ -41,7 +40,7 @@ def write_data(bucket, data, key, type):
         )
     else:
         s3_client.upload_fileobj(data, bucket, key)
-    logger.info(f"File ok.")
+    logger.info(f"File ok {key}")
 
 
 def read_data(bucket, key):

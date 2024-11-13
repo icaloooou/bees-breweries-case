@@ -6,6 +6,9 @@ import json
 import logging
 import requests
 import pandas as pd
+
+import sys
+sys.path.insert(0,"/opt/airflow/")
 from utils import config, functions
 
 
@@ -17,7 +20,7 @@ def bronze_layer(version):
     try:
         response = requests.get(url)
         data = json.loads(response.text)
-        prefix_s3 = f"{config.bronze_layer}/year={version.split('/')[-1].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[0]}/breweries.json"
+        prefix_s3 = f"{config.bronze_layer}/year={version.split('/')[0].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[-1]}/breweries.json"
         functions.write_data(config.bucket, data, prefix_s3, 'JSON')
     except Exception as e:
         logger.error(f'Error: {e}')
@@ -25,7 +28,7 @@ def bronze_layer(version):
 
 def silver_layer(version):
     try:
-        read_key = f"{config.bronze_layer}/year={version.split('/')[-1].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[0]}/breweries.json"
+        read_key = f"{config.bronze_layer}/year={version.split('/')[0].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[-1]}/breweries.json"
         data = functions.read_data(config.bucket, read_key)
         df = pd.read_json(data)
         df = df.astype(str)
@@ -37,7 +40,7 @@ def silver_layer(version):
 
             city = city.lower().replace(' ', '_')
             state = state.lower().replace(' ', '_')
-            write_key = f"{config.silver_layer}/year={version.split('/')[-1].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[0]}/state={state}/city={city}/breweries.parquet"
+            write_key = f"{config.silver_layer}/year={version.split('/')[0].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[-1]}/state={state}/city={city}/breweries.parquet"
             functions.write_data(config.bucket, buffer, write_key, 'PARQUET')
     except Exception as e:
         logger.error(f'Error: {e}')
@@ -45,7 +48,7 @@ def silver_layer(version):
 
 def gold_layer(version):
     try:
-        read_key = f"{config.silver_layer}/year={version.split('/')[-1].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[0]}/"
+        read_key = f"{config.silver_layer}/year={version.split('/')[0].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[-1]}/"
         df = functions.read_many_data(config.bucket, read_key)
 
         buffer_type = io.BytesIO()
@@ -53,7 +56,7 @@ def gold_layer(version):
         df_type = qty_type.to_frame().reset_index().rename(columns={'count':'total_type'})
         df_type.to_parquet(buffer_type, index=False)
         buffer_type.seek(0)
-        write_key_type = f"{config.gold_layer}/year={version.split('/')[-1].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[0]}/qty_type.parquet"
+        write_key_type = f"{config.gold_layer}/year={version.split('/')[0].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[-1]}/qty_type.parquet"
         functions.write_data(config.bucket, buffer_type, write_key_type, 'PARQUET')
 
         buffer_location = io.BytesIO()
@@ -61,7 +64,7 @@ def gold_layer(version):
         df_location = qty_location.to_frame().reset_index().rename(columns={'count':'total_type'})
         df_location.to_parquet(buffer_location, index=False)
         buffer_location.seek(0)
-        write_key_location = f"{config.gold_layer}/year={version.split('/')[-1].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[0]}/qty_location.parquet"
+        write_key_location = f"{config.gold_layer}/year={version.split('/')[0].split('-')[0]}/month={version.split('/')[1]}/day={version.split('/')[-1]}/qty_location.parquet"
         functions.write_data(config.bucket, buffer_location, write_key_location, 'PARQUET')
     except Exception as e:
         logger.error(f'Error: {e}')
